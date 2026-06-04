@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import AddClientModal from './AddClientModal';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -44,6 +45,9 @@ export default function DeviceModal({ device, onClose, onSaved }) {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
+
+  const reloadClients = () => api.get('/clients').then(r => setClients(r.data));
 
   useEffect(() => {
     Promise.all([
@@ -183,10 +187,21 @@ export default function DeviceModal({ device, onClose, onSaved }) {
             <div className="form-row cols-3">
               <div className="form-group">
                 <label className="form-label required">Klient</label>
-                <select className="form-control" value={form.clientId} onChange={e => { set('clientId', e.target.value); set('addressId', ''); }} required>
-                  <option value="">-- wybierz --</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                <div className="d-flex gap-8 align-center">
+                  <select className="form-control flex-1" value={form.clientId} onChange={e => { set('clientId', e.target.value); set('addressId', ''); }} required>
+                    <option value="">-- wybierz --</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setShowAddClient(true)}
+                    title="Dodaj nowego klienta"
+                    style={{ flexShrink: 0, padding: '8px 10px', fontWeight: 700 }}
+                  >
+                    + Nowy
+                  </button>
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label">Adres (lokalizacja)</label>
@@ -364,6 +379,18 @@ export default function DeviceModal({ device, onClose, onSaved }) {
           </div>
         </form>
       </div>
+
+      {showAddClient && (
+        <AddClientModal
+          onClose={() => setShowAddClient(false)}
+          onSaved={async (newClient) => {
+            setShowAddClient(false);
+            await reloadClients();
+            set('clientId', String(newClient.id));
+            set('addressId', '');
+          }}
+        />
+      )}
     </div>
   );
 }

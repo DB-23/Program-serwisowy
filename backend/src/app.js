@@ -17,6 +17,7 @@ app.use('/api/service-activities', require('./routes/serviceActivities'));
 app.use('/api/initial-config', require('./routes/initialConfig'));
 app.use('/api/equipment-types', require('./routes/equipmentTypes'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/gus', require('./routes/gus'));
 
 const PORT = process.env.PORT || 5000;
 

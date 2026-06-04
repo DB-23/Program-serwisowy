@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { User } = require('../models');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
-router.use(authenticate, requireAdmin);
+router.use(authenticate);
 
 router.get('/', async (req, res) => {
   try {
@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const { username, password, firstName, lastName, role } = req.body;
     if (!username || !password || !firstName || !lastName) {
@@ -31,7 +31,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
     if (!user) return res.status(404).json({ message: 'Nie znaleziono użytkownika' });
@@ -44,7 +44,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     if (Number(req.params.id) === req.user.id) {
       return res.status(400).json({ message: 'Nie możesz usunąć własnego konta' });

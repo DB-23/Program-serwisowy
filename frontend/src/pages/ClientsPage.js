@@ -16,12 +16,36 @@ export default function ClientsPage() {
   const [addressForm, setAddressForm] = useState(emptyAddress);
   const [error, setError] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  const [nipInput, setNipInput] = useState('');
+  const [gusLoading, setGusLoading] = useState(false);
+  const [gusError, setGusError] = useState('');
+  const [gusSuccess, setGusSuccess] = useState('');
 
   const load = () => api.get('/clients').then(r => setClients(r.data));
   useEffect(() => { load(); }, []);
 
-  const openAddClient = () => { setEditClient(null); setClientForm(emptyClient); setError(''); setShowClientModal(true); };
-  const openEditClient = (c) => { setEditClient(c); setClientForm({ name: c.name, phone: c.phone || '', email: c.email || '', taxId: c.taxId || '', notes: c.notes || '' }); setError(''); setShowClientModal(true); };
+  const handleGusLookup = async () => {
+    const nip = nipInput.replace(/[\s\-]/g, '');
+    if (!nip) { setGusError('Wpisz NIP'); return; }
+    setGusError(''); setGusSuccess(''); setGusLoading(true);
+    try {
+      const res = await api.get(`/gus/nip/${nip}`);
+      const d = res.data;
+      setClientForm(f => ({
+        ...f,
+        name: toTitleCase(d.name || f.name),
+        taxId: d.nip || f.taxId,
+      }));
+      setGusSuccess(`Pobrano: ${toTitleCase(d.name)}${d.statusVat ? ` (VAT: ${d.statusVat})` : ''}`);
+    } catch (err) {
+      setGusError(err.response?.data?.message || 'Błąd pobierania danych z GUS');
+    } finally {
+      setGusLoading(false);
+    }
+  };
+
+  const openAddClient = () => { setEditClient(null); setClientForm(emptyClient); setNipInput(''); setGusError(''); setGusSuccess(''); setError(''); setShowClientModal(true); };
+  const openEditClient = (c) => { setEditClient(c); setClientForm({ name: c.name, phone: c.phone || '', email: c.email || '', taxId: c.taxId || '', notes: c.notes || '' }); setNipInput(c.taxId || ''); setGusError(''); setGusSuccess(''); setError(''); setShowClientModal(true); };
 
   const openAddAddress = (client) => { setSelectedClient(client); setEditAddress(null); setAddressForm(emptyAddress); setError(''); setShowAddressModal(true); };
   const openEditAddress = (client, addr) => { setSelectedClient(client); setEditAddress(addr); setAddressForm({ label: addr.label || '', street: addr.street, city: addr.city, postalCode: addr.postalCode || '' }); setError(''); setShowAddressModal(true); };
@@ -161,6 +185,26 @@ export default function ClientsPage() {
             <form onSubmit={handleSaveClient}>
               <div className="modal-body">
                 {error && <div className="alert alert-danger">{error}</div>}
+
+                {/* GUS lookup */}
+                <div className="card" style={{ background: '#f8f9fa', marginBottom: 16 }}>
+                  <div className="card-title" style={{ fontSize: 13 }}>Pobierz dane z rejestru MF (Biala Lista VAT)</div>
+                  <div className="d-flex gap-8 align-center">
+                    <input
+                      className="form-control flex-1"
+                      placeholder="Wpisz NIP (10 cyfr)"
+                      value={nipInput}
+                      onChange={e => { setNipInput(e.target.value); setGusError(''); setGusSuccess(''); }}
+                      maxLength={13}
+                    />
+                    <button type="button" className="btn btn-outline" onClick={handleGusLookup} disabled={gusLoading} style={{ whiteSpace: 'nowrap' }}>
+                      {gusLoading ? 'Pobieranie...' : 'Pobierz dane'}
+                    </button>
+                  </div>
+                  {gusError && <div className="error-text" style={{ marginTop: 6 }}>{gusError}</div>}
+                  {gusSuccess && <div style={{ color: '#198754', fontSize: 12, marginTop: 6 }}>{gusSuccess}</div>}
+                </div>
+
                 <div className="form-group">
                   <label className="form-label required">Nazwa klienta / firmy</label>
                   <input className="form-control" value={clientForm.name} onChange={e => setClientForm({ ...clientForm, name: e.target.value })} required />
@@ -233,4 +277,9 @@ export default function ClientsPage() {
       )}
     </div>
   );
+}
+
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.toLowerCase().replace(/(?:^|\s|[,.\-/])(\S)/g, (m, c) => m.replace(c, c.toUpperCase()));
 }
