@@ -46,8 +46,33 @@ export default function DeviceModal({ device, onClose, onSaved }) {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
+  const [showAddAddress, setShowAddAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({ label: '', street: '', city: '', postalCode: '' });
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressError, setAddressError] = useState('');
 
   const reloadClients = () => api.get('/clients').then(r => setClients(r.data));
+  const reloadAddresses = () => form.clientId
+    ? api.get(`/clients/${form.clientId}/addresses`).then(r => setAddresses(r.data))
+    : Promise.resolve();
+
+  const handleSaveAddress = async (e) => {
+    e.preventDefault();
+    setAddressError('');
+    setAddressSaving(true);
+    try {
+      const res = await api.post(`/clients/${form.clientId}/addresses`, addressForm);
+      const newAddr = res.data;
+      await reloadAddresses();
+      set('addressId', String(newAddr.id));
+      setShowAddAddress(false);
+      setAddressForm({ label: '', street: '', city: '', postalCode: '' });
+    } catch (err) {
+      setAddressError(err.response?.data?.message || 'Błąd zapisu');
+    } finally {
+      setAddressSaving(false);
+    }
+  };
 
   useEffect(() => {
     Promise.all([
@@ -205,10 +230,22 @@ export default function DeviceModal({ device, onClose, onSaved }) {
               </div>
               <div className="form-group">
                 <label className="form-label">Adres (lokalizacja)</label>
-                <select className="form-control" value={form.addressId} onChange={e => set('addressId', e.target.value)} disabled={!form.clientId}>
-                  <option value="">-- wybierz --</option>
-                  {addresses.map(a => <option key={a.id} value={a.id}>{a.label ? `${a.label} - ` : ''}{a.street}, {a.city}</option>)}
-                </select>
+                <div className="d-flex gap-8 align-center">
+                  <select className="form-control flex-1" value={form.addressId} onChange={e => set('addressId', e.target.value)} disabled={!form.clientId}>
+                    <option value="">-- wybierz --</option>
+                    {addresses.map(a => <option key={a.id} value={a.id}>{a.label ? `${a.label} - ` : ''}{a.street}, {a.city}</option>)}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => { setAddressForm({ label: '', street: '', city: '', postalCode: '' }); setAddressError(''); setShowAddAddress(true); }}
+                    disabled={!form.clientId}
+                    title="Dodaj nowy adres dla wybranego klienta"
+                    style={{ flexShrink: 0, padding: '8px 10px', fontWeight: 700 }}
+                  >
+                    + Nowy
+                  </button>
+                </div>
               </div>
               <div className="form-group">
                 <label className="form-label required">Data przyjecia</label>
@@ -390,6 +427,44 @@ export default function DeviceModal({ device, onClose, onSaved }) {
             set('addressId', '');
           }}
         />
+      )}
+
+      {showAddAddress && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowAddAddress(false)}>
+          <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Nowy adres</h3>
+              <button className="modal-close" onClick={() => setShowAddAddress(false)}>x</button>
+            </div>
+            <form onSubmit={handleSaveAddress}>
+              <div className="modal-body">
+                {addressError && <div className="alert alert-danger">{addressError}</div>}
+                <div className="form-group">
+                  <label className="form-label">Etykieta (np. "Siedziba", "Sklep")</label>
+                  <input className="form-control" value={addressForm.label} onChange={e => setAddressForm({ ...addressForm, label: e.target.value })} placeholder="np. Sklep centrum, Magazyn..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label required">Ulica i numer</label>
+                  <input className="form-control" value={addressForm.street} onChange={e => setAddressForm({ ...addressForm, street: e.target.value })} required />
+                </div>
+                <div className="form-row cols-2">
+                  <div className="form-group">
+                    <label className="form-label required">Miasto</label>
+                    <input className="form-control" value={addressForm.city} onChange={e => setAddressForm({ ...addressForm, city: e.target.value })} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Kod pocztowy</label>
+                    <input className="form-control" value={addressForm.postalCode} onChange={e => setAddressForm({ ...addressForm, postalCode: e.target.value })} placeholder="00-000" />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-outline" onClick={() => setShowAddAddress(false)}>Anuluj</button>
+                <button type="submit" className="btn btn-primary" disabled={addressSaving}>{addressSaving ? 'Zapisywanie...' : 'Dodaj adres'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

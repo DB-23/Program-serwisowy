@@ -34,10 +34,20 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+const nullifyEmptyIds = (fields) => {
+  const idFields = ['clientId', 'addressId', 'equipmentTypeId', 'repairTechnicianId', 'statusId', 'technicianId'];
+  for (const f of idFields) {
+    if (fields[f] === '' || fields[f] === null) fields[f] = null;
+    else if (fields[f] !== undefined) fields[f] = Number(fields[f]) || null;
+  }
+  return fields;
+};
+
 router.post('/', async (req, res) => {
   try {
     const { serviceActivityIds, initialConfigItems, ...fields } = req.body;
     fields.technicianId = req.user.id;
+    nullifyEmptyIds(fields);
     const device = await Device.create(fields);
 
     if (serviceActivityIds?.length) {
@@ -66,6 +76,7 @@ router.put('/:id', async (req, res) => {
     if (!device) return res.status(404).json({ message: 'Nie znaleziono urządzenia' });
 
     const { serviceActivityIds, initialConfigItems, ...fields } = req.body;
+    nullifyEmptyIds(fields);
     await device.update(fields);
 
     if (serviceActivityIds !== undefined) {
