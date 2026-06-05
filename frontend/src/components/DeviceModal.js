@@ -117,7 +117,7 @@ export default function DeviceModal({ device, onClose, onSaved }) {
         repairDescription: device.repairDescription || '',
         invoiceIssued: device.invoiceIssued || false,
         serviceActivityIds: device.serviceActivities?.map(a => a.id) || [],
-        initialConfigItems: device.initialConfigItems?.map(i => ({ id: i.id, checked: i.DeviceInitialConfig?.checked || false })) || [],
+        initialConfigItems: device.initialConfigItems?.map(i => ({ id: i.id, checked: i.DeviceInitialConfig?.checked || false, value: i.DeviceInitialConfig?.value || '' })) || [],
       });
     }
   }, [device]);
@@ -147,13 +147,25 @@ export default function DeviceModal({ device, onClose, onSaved }) {
       if (exists) {
         return { ...f, initialConfigItems: f.initialConfigItems.map(x => x.id === id ? { ...x, checked } : x) };
       }
-      return { ...f, initialConfigItems: [...f.initialConfigItems, { id, checked }] };
+      return { ...f, initialConfigItems: [...f.initialConfigItems, { id, checked, value: '' }] };
     });
+  };
+
+  const setConfigValue = (id, value) => {
+    setForm(f => ({
+      ...f,
+      initialConfigItems: f.initialConfigItems.map(x => x.id === id ? { ...x, value } : x),
+    }));
   };
 
   const getConfigChecked = (id) => {
     const item = form.initialConfigItems.find(x => x.id === id);
     return item ? item.checked : false;
+  };
+
+  const getConfigValue = (id) => {
+    const item = form.initialConfigItems.find(x => x.id === id);
+    return item ? item.value || '' : '';
   };
 
   const handleSubmit = async (e) => {
@@ -395,16 +407,27 @@ export default function DeviceModal({ device, onClose, onSaved }) {
               <>
                 <hr className="section-divider" />
                 <div className="card-title">Konfiguracja wstepna</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px 16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px 16px' }}>
                   {configItems.map(ci => (
-                    <label key={ci.id} className="form-check">
-                      <input
-                        type="checkbox"
-                        checked={getConfigChecked(ci.id)}
-                        onChange={e => toggleConfigItem(ci.id, e.target.checked)}
-                      />
-                      <span>{ci.name}{ci.description && <span className="text-muted"> - {ci.description}</span>}</span>
-                    </label>
+                    <div key={ci.id}>
+                      <label className="form-check">
+                        <input
+                          type="checkbox"
+                          checked={getConfigChecked(ci.id)}
+                          onChange={e => toggleConfigItem(ci.id, e.target.checked)}
+                        />
+                        <span>{ci.name}{ci.description && <span className="text-muted"> - {ci.description}</span>}</span>
+                      </label>
+                      {getConfigChecked(ci.id) && (
+                        <input
+                          className="form-control"
+                          style={{ marginTop: 4, fontSize: 13 }}
+                          placeholder="ID do zdalnego połączenia (opcjonalnie)"
+                          value={getConfigValue(ci.id)}
+                          onChange={e => setConfigValue(ci.id, e.target.value)}
+                        />
+                      )}
+                    </div>
                   ))}
                 </div>
               </>

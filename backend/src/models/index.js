@@ -36,8 +36,10 @@ ServiceActivity.belongsToMany(Device, {
 });
 
 // Device <-> InitialConfigItem (many-to-many with checked flag)
+const { DataTypes } = require('sequelize');
 const DeviceInitialConfig = sequelize.define('DeviceInitialConfig', {
-  checked: { type: require('sequelize').DataTypes.BOOLEAN, defaultValue: false },
+  checked: { type: DataTypes.BOOLEAN, defaultValue: false },
+  value: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
 }, { tableName: 'device_initial_config', timestamps: false });
 
 Device.belongsToMany(InitialConfigItem, {

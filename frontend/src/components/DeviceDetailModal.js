@@ -70,12 +70,23 @@ export default function DeviceDetailModal({ device: d, onClose, onEdit }) {
           {d.entryType === 'new_computer' && d.initialConfigItems?.length > 0 && (
             <>
               <div className="card-title" style={{ marginTop: 16 }}>Konfiguracja wstepna</div>
-              {d.initialConfigItems.map(ci => (
-                <div key={ci.id} className="form-check" style={{ marginBottom: 4 }}>
-                  <input type="checkbox" readOnly checked={ci.DeviceInitialConfig?.checked || false} />
-                  <label style={{ color: ci.DeviceInitialConfig?.checked ? '#198754' : '#6c757d' }}>{ci.name}</label>
-                </div>
-              ))}
+              {d.initialConfigItems.map(ci => {
+                const checked = ci.DeviceInitialConfig?.checked || false;
+                const val = ci.DeviceInitialConfig?.value;
+                return (
+                  <div key={ci.id} style={{ marginBottom: 6 }}>
+                    <div className="form-check" style={{ marginBottom: val && checked ? 2 : 0 }}>
+                      <input type="checkbox" readOnly checked={checked} />
+                      <label style={{ color: checked ? '#198754' : '#6c757d' }}>{ci.name}</label>
+                    </div>
+                    {checked && val && (
+                      <div style={{ fontSize: 12, color: '#495057', paddingLeft: 24, fontFamily: 'monospace' }}>
+                        ID: {val}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </>
           )}
         </div>

@@ -12,7 +12,7 @@ const deviceIncludes = [
   { model: EquipmentType, as: 'equipmentType' },
   { model: Status, as: 'status' },
   { model: ServiceActivity, as: 'serviceActivities', through: { attributes: [] } },
-  { model: InitialConfigItem, as: 'initialConfigItems', through: { attributes: ['checked'] } },
+  { model: InitialConfigItem, as: 'initialConfigItems', through: { attributes: ['checked', 'value'] } },
 ];
 
 router.get('/', async (req, res) => {
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
       for (const item of initialConfigItems) {
         await DeviceInitialConfig.findOrCreate({
           where: { device_id: device.id, initial_config_item_id: item.id },
-          defaults: { checked: item.checked || false },
+          defaults: { checked: item.checked || false, value: item.value || null },
         });
       }
     }
@@ -90,6 +90,7 @@ router.put('/:id', async (req, res) => {
           device_id: device.id,
           initial_config_item_id: item.id,
           checked: item.checked || false,
+          value: item.value || null,
         });
       }
     }
